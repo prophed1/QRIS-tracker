@@ -1,0 +1,6 @@
+{
+  "name": "Expense Tracker",
+  "description": "An automated Expense Tracker with receipt image OCR and text parser powered securely by Gemini AI.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
