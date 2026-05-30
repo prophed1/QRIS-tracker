@@ -822,17 +822,17 @@ export default function App() {
               </div>
 
               {/* SVG Doughnut chart area */}
-              <div className="flex justify-center my-4 relative h-48 w-full group">
+              <div className="flex justify-center my-4 w-full group">
                 {sumOfNonEmpty === 0 ? (
-                  <div className="flex flex-col items-center justify-center text-center">
+                  <div className="flex flex-col items-center justify-center text-center h-48">
                     <div className="w-32 h-32 rounded-full border-8 border-slate-100/80 flex items-center justify-center mb-2">
                       <FolderOpen className="w-8 h-8 text-slate-300" />
                     </div>
                     <p className="text-xs text-slate-400 font-medium font-sans">No transactions registered this month</p>
                   </div>
                 ) : (
-                  <>
-                    <svg viewBox="0 0 100 100" className="w-48 h-48 transform -rotate-90">
+                  <div className="relative w-48 h-48">
+                    <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
                       {/* Base circle background */}
                       <circle cx="50" cy="50" r={donutRadius} fill="transparent" stroke="#f1f5f9" strokeWidth={strokeWidth} />
                       
@@ -865,11 +865,11 @@ export default function App() {
                     </svg>
 
                     {/* Center summary text */}
-                    <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center pointer-events-none px-1 overflow-hidden z-10 w-[100px] text-center">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10 text-center px-4">
                       <span className="text-[10px] sm:text-[11px] text-slate-400 uppercase tracking-[0.05em] font-semibold leading-tight whitespace-nowrap">Total Spent</span>
                       <span className="text-[11px] sm:text-[13px] font-bold text-slate-900 font-mono tracking-tighter truncate w-full mt-0.5">{formatRupiah(totalExpenses)}</span>
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
             </div>
