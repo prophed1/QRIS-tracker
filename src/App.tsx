@@ -21,6 +21,7 @@ import {
   Edit3
 } from "lucide-react";
 import { Transaction, AppData, CategoryType } from "./types";
+import { supabase } from "./lib/supabase";
 
 const CATEGORIES: { name: CategoryType; icon: string; color: string }[] = [
   { name: "Food & Beverage", icon: "🍔", color: "#0d9488" }, // Teal
@@ -115,53 +116,45 @@ export default function App() {
       const stored = localStorage.getItem("bsi_tracker_data");
       if (stored) {
         const parsed: AppData = JSON.parse(stored);
-        if (parsed.transactions && Array.isArray(parsed.transactions)) {
-          setTransactions(parsed.transactions);
-        }
         if (typeof parsed.budget === "number" && parsed.budget > 0) {
           setBudget(parsed.budget);
         }
-      } else {
-        // Fallback or seed initial data
-        setTransactions([
-          {
-            id: "1",
-            date: "2026-05-28",
-            amount: 75000,
-            merchant: "Kopi Kenangan",
-            category: "Food & Beverage"
-          },
-          {
-            id: "2",
-            date: "2026-05-27",
-            amount: 320000,
-            merchant: "Superindo",
-            category: "Groceries"
-          },
-          {
-            id: "3",
-            date: "2026-05-25",
-            amount: 45000,
-            merchant: "Go-Ride",
-            category: "Transportation"
-          }
-        ]);
       }
     } catch (e) {
-      console.error("Failed to load transactions", e);
+      console.error("Failed to load local config", e);
     }
+
+    // Load from Supabase
+    const fetchTransactions = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('transactions')
+          .select('*')
+          .order('date', { ascending: false });
+        if (error) throw error;
+        if (data) {
+          // Sort explicitly by date to match chronological rendering
+          const sorted = data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          setTransactions(sorted as Transaction[]);
+        }
+      } catch (e) {
+        console.error("Failed to load from Supabase", e);
+      }
+    };
+    
+    fetchTransactions();
   }, []);
 
-  // Save to local storage on change
+  // Save budget to local storage on change
   useEffect(() => {
     if (selectedMonth && selectedYear) {
       const dataToSave: AppData = {
         budget,
-        transactions
+        transactions: [] // Don't duplicate transactions in localStorage anymore
       };
       localStorage.setItem("bsi_tracker_data", JSON.stringify(dataToSave));
     }
-  }, [transactions, budget, selectedMonth, selectedYear]);
+  }, [budget, selectedMonth, selectedYear]);
 
   // Calculations
   const filteredTransactions = transactions.filter((t) => {
@@ -329,20 +322,37 @@ export default function App() {
   };
 
   // Save parsed Transaction
-  const handleConfirmSave = () => {
+  const handleConfirmSave = async () => {
     if (!verificationForm) return;
 
-    const newTx: Transaction = {
-      id: String(Date.now()),
+    setIsProcessing(true);
+    const newTx = {
       date: verificationForm.date,
       amount: Number(verificationForm.amount),
       merchant: verificationForm.merchant,
       category: verificationForm.category
     };
 
-    setTransactions((prev) => [newTx, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-    setVerificationForm(null);
-    setRawTextMutation("");
+    try {
+      // Insert to Supabase DB
+      const { data, error } = await supabase
+        .from('transactions')
+        .insert([newTx])
+        .select();
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setTransactions((prev) => [data[0] as Transaction, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      }
+      setVerificationForm(null);
+      setRawTextMutation("");
+    } catch (err: any) {
+      console.error("Failed to insert transaction:", err);
+      alert("Failed to insert transaction: " + err.message);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   // Cancel form
@@ -351,17 +361,35 @@ export default function App() {
   };
 
   // Delete Transaction
-  const handleDeleteTransaction = (id: string) => {
-    setTransactions((prev) => prev.filter((t) => t.id !== id));
+  const handleDeleteTransaction = async (id: string) => {
+    try {
+      const { error } = await supabase.from('transactions').delete().eq('id', id);
+      if (error) throw error;
+      setTransactions((prev) => prev.filter((t) => t.id !== id));
+    } catch (err) {
+      console.error("Failed to delete", err);
+    }
   };
 
   // Clear Month's Transactions
-  const handleClearMonth = () => {
+  const handleClearMonth = async () => {
     if (confirm("Are you sure you want to delete all transactions recorded for this month?")) {
-      setTransactions((prev) => prev.filter((t) => {
-        const [year, month] = t.date.split("-");
-        return !(year === selectedYear && month === selectedMonth);
-      }));
+      const idsToDelete = transactions
+        .filter((t) => {
+          const [year, month] = t.date.split("-");
+          return year === selectedYear && month === selectedMonth;
+        })
+        .map(t => t.id);
+
+      if (idsToDelete.length === 0) return;
+
+      try {
+        const { error } = await supabase.from('transactions').delete().in('id', idsToDelete);
+        if (error) throw error;
+        setTransactions((prev) => prev.filter((t) => !idsToDelete.includes(t.id)));
+      } catch (err) {
+        console.error("Failed to clear month", err);
+      }
     }
   };
 
@@ -408,22 +436,38 @@ export default function App() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const text = event.target?.result as string;
         const imported = JSON.parse(text);
         if (Array.isArray(imported)) {
-          setTransactions((prev) => {
-            const currentIds = new Set(prev.map((t) => t.id));
-            const newTransactions = imported.filter((t) => !currentIds.has(t.id));
-            return [...prev, ...newTransactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-          });
-          alert("Transactions imported successfully.");
+          // Prepare for Supabase
+          const currentIds = new Set(transactions.map((t) => t.id));
+          const newTransactions = imported
+            .filter((t: any) => !currentIds.has(t.id))
+            .map((t: any) => ({
+              date: t.date,
+              amount: Number(t.amount) || 0,
+              merchant: String(t.merchant),
+              category: String(t.category)
+            })); // Omit ID so Supabase uses its UUID DEFAULT
+
+          if (newTransactions.length > 0) {
+            const { data, error } = await supabase.from('transactions').insert(newTransactions).select();
+            if (error) throw error;
+            if (data) {
+              setTransactions((prev) => [...data, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+              alert(`${data.length} transactions imported successfully.`);
+            }
+          } else {
+             alert("No new transactions to import.");
+          }
         } else {
           alert("Invalid JSON format.");
         }
       } catch (err) {
-        alert("Failed to parse JSON file.");
+        console.error(err);
+        alert("Failed to parse or import JSON file.");
       }
     };
     reader.readAsText(file);
@@ -750,9 +794,10 @@ export default function App() {
                   <div className="flex gap-2 mt-5">
                     <button 
                       onClick={handleConfirmSave}
-                      className="flex-1 bg-teal-800 hover:bg-teal-900 text-white font-semibold py-2 rounded-lg text-sm transition-colors shadow-xs cursor-pointer"
+                      disabled={isProcessing}
+                      className={`flex-1 ${isProcessing ? 'bg-teal-800/60 cursor-not-allowed' : 'bg-teal-800 hover:bg-teal-900 cursor-pointer'} text-white font-semibold py-2 rounded-lg text-sm transition-colors shadow-xs`}
                     >
-                      Confirm & Save Transaction
+                      {isProcessing ? "Saving..." : "Confirm & Save Transaction"}
                     </button>
                     <button 
                       onClick={handleCancelForm}
@@ -787,7 +832,7 @@ export default function App() {
                   </div>
                 ) : (
                   <>
-                    <svg viewBox="0 0 100 100" className="w-40 h-40 transform -rotate-90">
+                    <svg viewBox="0 0 100 100" className="w-48 h-48 transform -rotate-90">
                       {/* Base circle background */}
                       <circle cx="50" cy="50" r={donutRadius} fill="transparent" stroke="#f1f5f9" strokeWidth={strokeWidth} />
                       
@@ -820,9 +865,9 @@ export default function App() {
                     </svg>
 
                     {/* Center summary text */}
-                    <div className="absolute inset-x-0 inset-y-0 flex flex-col items-center justify-center pointer-events-none">
-                      <span className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Total Spent</span>
-                      <span className="text-sm font-bold text-slate-900 font-mono mt-0.5">{formatRupiah(totalExpenses)}</span>
+                    <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center pointer-events-none px-1 overflow-hidden z-10 w-[100px] text-center">
+                      <span className="text-[10px] sm:text-[11px] text-slate-400 uppercase tracking-[0.05em] font-semibold leading-tight whitespace-nowrap">Total Spent</span>
+                      <span className="text-[11px] sm:text-[13px] font-bold text-slate-900 font-mono tracking-tighter truncate w-full mt-0.5">{formatRupiah(totalExpenses)}</span>
                     </div>
                   </>
                 )}
@@ -860,8 +905,8 @@ export default function App() {
         <section id="table-canvas" className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
           
           {/* Header toolbar options with exporter and dynamic elements */}
-          <div className="p-4 border-b flex justify-between items-center bg-white sticky top-0 z-10">
-            <div>
+          <div className="p-4 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white sticky top-0 z-10 w-full overflow-hidden">
+            <div className="shrink-0">
               <h3 className="font-bold text-slate-800 tracking-tight flex items-center gap-1.5">
                 Transaction History Logs
               </h3>
@@ -871,10 +916,10 @@ export default function App() {
             </div>
             
             {/* Download controls exporter */}
-            <div className="flex items-center gap-2.5 select-none print:hidden">
+            <div className="flex items-center gap-2.5 select-none print:hidden overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-hide">
               <button 
                 onClick={() => importInputRef.current?.click()}
-                className="text-xs font-bold text-teal-700 border border-slate-200 hover:bg-slate-50/10 hover:border-teal-700/50 bg-white shadow-3xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="shrink-0 text-xs font-bold text-teal-700 border border-slate-200 hover:bg-slate-50/10 hover:border-teal-700/50 bg-white shadow-3xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Upload className="w-3.5 h-3.5" />
                 <span>Import JSON</span>
@@ -889,7 +934,7 @@ export default function App() {
 
               <button 
                 onClick={handlePrint}
-                className="text-xs font-bold text-slate-600 border border-slate-200 hover:bg-slate-50/30 bg-white shadow-3xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="shrink-0 text-xs font-bold text-slate-600 border border-slate-200 hover:bg-slate-50/30 bg-white shadow-3xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Print PDF</span>
@@ -897,7 +942,7 @@ export default function App() {
               
               <button 
                 onClick={handleExportJSON}
-                className="text-xs font-bold text-slate-600 border border-slate-200 hover:bg-slate-50/30 bg-white shadow-3xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="shrink-0 text-xs font-bold text-slate-600 border border-slate-200 hover:bg-slate-50/30 bg-white shadow-3xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Backup JSON</span>
@@ -906,7 +951,7 @@ export default function App() {
               <button 
                 onClick={handleClearMonth}
                 disabled={filteredTransactions.length === 0}
-                className="text-xs font-bold text-rose-600 disabled:opacity-40 disabled:pointer-events-none hover:bg-rose-50/60 transition-colors px-3 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer"
+                className="shrink-0 text-xs font-bold text-rose-600 disabled:opacity-40 disabled:pointer-events-none hover:bg-rose-50/60 transition-colors px-3 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Clear All</span>
@@ -915,8 +960,8 @@ export default function App() {
           </div>
 
           {/* Table proper list logs */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto w-full pb-4 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+            <table className="w-full text-left border-collapse min-w-[700px] whitespace-nowrap">
               <thead className="bg-slate-50/50">
                 <tr className="border-b text-[10px] uppercase font-bold tracking-widest text-slate-400 select-none">
                   <th className="p-4 text-[10px] font-bold text-slate-400 uppercase border-b">Date</th>
