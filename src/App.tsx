@@ -521,7 +521,7 @@ export default function App() {
     <div className="min-h-screen bg-slate-50 dark:bg-[#050A15] text-slate-900 dark:text-slate-50 transition-colors duration-300">
       <Toaster position="top-center" richColors theme={theme === 'dark' ? 'dark' : 'light'} />
       {/* Upper Navigation / App Branded bar */}
-      <header className="h-16 bg-white/80 dark:bg-[#050A15]/80 backdrop-blur-md border-b border-slate-200/60 dark:border-[#1D2A43]/50 flex items-center justify-between px-6 shrink-0 print:hidden sticky top-0 z-40 transition-colors duration-300">
+      <header className="min-h-16 py-3 sm:py-0 bg-white/80 dark:bg-[#050A15]/80 backdrop-blur-md border-b border-slate-200/60 dark:border-[#1D2A43]/50 flex items-center justify-between px-6 shrink-0 print:hidden sticky top-0 z-40 transition-colors duration-300">
         <div className="flex w-full max-w-6xl mx-auto flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center text-white">
@@ -538,9 +538,9 @@ export default function App() {
           </div>
           
                     {/* Date Range & Theme Toggle */}
-          <div className="flex items-center gap-4 w-full sm:w-auto">
-            <div className="flex items-center gap-2">
-              <div className="flex items-center bg-slate-100 dark:bg-[#111C34] rounded-md px-2 focus-within:ring-2 focus-within:ring-teal-500 transition-shadow">
+          <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
+            <div className="flex items-center gap-2 flex-1 sm:flex-none justify-center">
+              <div className="flex items-center bg-slate-100 dark:bg-[#111C34] rounded-md px-2 focus-within:ring-2 focus-within:ring-teal-500 transition-shadow w-1/2 sm:w-auto">
                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 pl-2">From</span>
                 <input
                   type="date"
@@ -549,7 +549,7 @@ export default function App() {
                   className="bg-transparent border-none px-2 py-1.5 text-sm font-medium w-full sm:w-36 focus:outline-none focus:ring-0 text-slate-700 dark:text-slate-200 [color-scheme:light] dark:[color-scheme:dark]"
                 />
               </div>
-              <div className="flex items-center bg-slate-100 dark:bg-[#111C34] rounded-md px-2 focus-within:ring-2 focus-within:ring-teal-500 transition-shadow">
+              <div className="flex items-center bg-slate-100 dark:bg-[#111C34] rounded-md px-2 focus-within:ring-2 focus-within:ring-teal-500 transition-shadow w-1/2 sm:w-auto">
                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 pl-2">To</span>
                 <input
                   type="date"
@@ -561,7 +561,7 @@ export default function App() {
             </div>
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="p-2 rounded-full bg-slate-100 dark:bg-[#111C34] text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all hover:scale-110 active:scale-95"
+              className="p-2 rounded-full bg-slate-100 dark:bg-[#111C34] text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all hover:scale-110 active:scale-95 shrink-0"
               aria-label="Toggle Theme"
             >
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -578,10 +578,10 @@ export default function App() {
         className="flex-1 max-w-6xl mx-auto px-5 py-8 w-full">
         
         {/* Metric Cards Banner Grid */}
-        <section id="metrics-grid" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <section id="metrics-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
           
           {/* Card 1: Expenses */}
-          <div className="bg-white dark:bg-[#0B1324] rounded-2xl border border-slate-200/60 dark:border-[#1D2A43]/50 p-5 shadow-lg shadow-slate-200/40 dark:shadow-slate-900/50 hover:shadow-xl dark:hover:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
+          <div className="bg-white dark:bg-[#0B1324] rounded-3xl border border-slate-200/80 dark:border-[#1D2A43] p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
             <div className="absolute right-0 top-0 w-24 h-24 bg-rose-50 dark:bg-rose-900/40 rounded-bl-full -z-0 opacity-40 group-hover:scale-110 transition-transform duration-300" />
             <div className="relative z-10">
               <div className="flex justify-between items-center mb-2.5">
@@ -601,7 +601,7 @@ export default function App() {
           </div>
 
           {/* Card 2: Safe Budget limits */}
-          <div className="bg-white dark:bg-[#0B1324] rounded-2xl border border-slate-200/60 dark:border-[#1D2A43]/50 p-5 shadow-lg shadow-slate-200/40 dark:shadow-slate-900/50 hover:shadow-xl dark:hover:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
+          <div className="bg-white dark:bg-[#0B1324] rounded-3xl border border-slate-200/80 dark:border-[#1D2A43] p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
             <div className="absolute right-0 top-0 w-24 h-24 bg-teal-50 dark:bg-teal-900/40 rounded-bl-full -z-0 opacity-45 group-hover:scale-110 transition-transform duration-300" />
             <div className="relative z-10">
               <div className="flex justify-between items-center mb-2">
@@ -630,7 +630,7 @@ export default function App() {
           </div>
 
           {/* Card 3: Free / Over Limits balances */}
-          <div className="bg-white dark:bg-[#0B1324] rounded-2xl border border-slate-200/60 dark:border-[#1D2A43]/50 p-5 shadow-lg shadow-slate-200/40 dark:shadow-slate-900/50 hover:shadow-xl dark:hover:shadow-black/50 transition-all duration-300 relative overflow-hidden group">
+          <div className="bg-white dark:bg-[#0B1324] rounded-3xl border border-slate-200/80 dark:border-[#1D2A43] p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
             <div className="absolute right-0 top-0 w-24 h-24 bg-emerald-50 dark:bg-emerald-900/40 rounded-bl-full -z-0 opacity-40 group-hover:scale-110 transition-transform duration-300" />
             <div className="relative z-10">
               <div className="flex justify-between items-center mb-2.5">
@@ -658,10 +658,10 @@ export default function App() {
         </section>
 
         {/* Section B: App Controls (Split Flex layout: Left Parser upload, Right Pie metrics breakdown) */}
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
           
           {/* Container Part A: Parsers & Extrusion Tools */}
-          <div className="lg:col-span-7 bg-white dark:bg-[#0B1324] rounded-2xl border border-slate-200/60 dark:border-[#1D2A43]/50 shadow-lg shadow-slate-200/40 dark:shadow-slate-900/50 hover:shadow-xl dark:hover:shadow-black/50 transition-all duration-300 overflow-hidden print:hidden flex flex-col">
+          <div className="lg:col-span-7 bg-white dark:bg-[#0B1324] rounded-3xl border border-slate-200/80 dark:border-[#1D2A43] shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden print:hidden flex flex-col">
             {/* Headers Tabs block */}
             <div className="flex border-b">
               <button 
@@ -902,7 +902,7 @@ export default function App() {
           </div>
 
           {/* Container Part B: Category Expense Breakdown Donut SVG Chart & Legible legend item */}
-          <div className="lg:col-span-12 xl:lg:col-span-5 bg-white dark:bg-[#0B1324] rounded-2xl border border-slate-200/60 dark:border-[#1D2A43]/50 shadow-lg shadow-slate-200/40 dark:shadow-slate-900/50 hover:shadow-xl dark:hover:shadow-black/50 transition-all duration-300 p-6 flex flex-col justify-between">
+          <div className="lg:col-span-5 bg-white dark:bg-[#0B1324] rounded-3xl border border-slate-200/80 dark:border-[#1D2A43] shadow-sm hover:shadow-md transition-all duration-300 p-6 flex flex-col justify-between">
             <div>
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-sm font-semibold tracking-tight text-slate-800 dark:text-slate-100">
@@ -992,7 +992,7 @@ export default function App() {
         </section>
 
         {/* Section C: Transaction Table list log historic */}
-        <section id="table-canvas" className="flex-1 bg-white dark:bg-[#0B1324] rounded-2xl border border-slate-200/60 dark:border-[#1D2A43]/50 shadow-lg shadow-slate-200/40 dark:shadow-slate-900/50 hover:shadow-xl dark:hover:shadow-black/50 transition-all duration-300 flex flex-col overflow-hidden">
+        <section id="table-canvas" className="flex-1 bg-white dark:bg-[#0B1324] rounded-3xl border border-slate-200/80 dark:border-[#1D2A43] shadow-sm hover:shadow-md transition-all duration-300 flex flex-col overflow-hidden">
           
           {/* Header toolbar options with exporter and dynamic elements */}
           <div className="p-4 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#0B1324] sticky top-0 z-10 w-full overflow-hidden">
