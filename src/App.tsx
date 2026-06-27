@@ -779,10 +779,11 @@ export default function App() {
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 dark:via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
                   <div className="flex flex-col items-center justify-center mb-6">
                     <motion.div 
-                      animate={{ rotate: 360 }}
-                      transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                      animate={{ scale: [0.95, 1.05, 0.95], opacity: [0.7, 1, 0.7] }}
+                      transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                      className="mb-4 relative"
                     >
-                      <Cpu className="text-teal-600 dark:text-teal-400 w-8 h-8 mb-3 opacity-80" />
+                      <Cpu className="text-teal-600 dark:text-teal-400 w-9 h-9" />
                     </motion.div>
                     <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                       Securely processing with GPT-4o...
