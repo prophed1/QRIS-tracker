@@ -98,7 +98,20 @@ export default async function handler(req: Request, res: Response) {
     }
 
     try {
-      const parsedJSON = JSON.parse(resultJson);
+      let cleanJson = resultJson;
+      const jsonBlockMatch = cleanJson.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+      if (jsonBlockMatch) {
+        cleanJson = jsonBlockMatch[1];
+      } else {
+        // Fallback: try to find the first { and last }
+        const firstBrace = cleanJson.indexOf('{');
+        const lastBrace = cleanJson.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+          cleanJson = cleanJson.slice(firstBrace, lastBrace + 1);
+        }
+      }
+      
+      const parsedJSON = JSON.parse(cleanJson);
       return res.json(parsedJSON);
     } catch (parseError) {
       console.error("JSON parse error on Paxsenix output:", resultJson);
