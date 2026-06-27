@@ -28,13 +28,13 @@ import { Transaction, AppData, CategoryType } from "./types";
 import { supabase } from "./lib/supabase";
 
 const CATEGORIES: { name: CategoryType; icon: string; color: string }[] = [
-  { name: "Food & Beverage", icon: "🍔", color: "#EB4203" }, 
-  { name: "Groceries", icon: "🛒", color: "#00CEC8" },       
-  { name: "Transportation", icon: "🚗", color: "#FF9C5F" },  
-  { name: "Shopping", icon: "🛍️", color: "#FCEFC3" },        
-  { name: "Bills & Utilities", icon: "💳", color: "#00B9B4" }, 
-  { name: "Entertainment", icon: "🎬", color: "#D03902" },   
-  { name: "Others", icon: "📦", color: "#64748b" }           
+  { name: "Food & Beverage", icon: "🍔", color: "#F97316" }, // Orange
+  { name: "Groceries", icon: "🛒", color: "#10B981" },       // Emerald Green
+  { name: "Transportation", icon: "🚗", color: "#3B82F6" },  // Blue
+  { name: "Shopping", icon: "🛍️", color: "#8B5CF6" },        // Purple
+  { name: "Bills & Utilities", icon: "💳", color: "#EC4899" }, // Pink
+  { name: "Entertainment", icon: "🎬", color: "#EAB308" },   // Yellow
+  { name: "Others", icon: "📦", color: "#64748b" }           // Slate
 ];
 
 const MONTHS = [
