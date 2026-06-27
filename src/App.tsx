@@ -518,7 +518,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen ">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#050A15] text-slate-900 dark:text-slate-50 transition-colors duration-300">
       <Toaster position="top-center" richColors theme={theme === 'dark' ? 'dark' : 'light'} />
       {/* Upper Navigation / App Branded bar */}
       <header className="h-16 bg-white/80 dark:bg-[#050A15]/80 backdrop-blur-md border-b border-slate-200/60 dark:border-[#1D2A43]/50 flex items-center justify-between px-6 shrink-0 print:hidden sticky top-0 z-40 transition-colors duration-300">
