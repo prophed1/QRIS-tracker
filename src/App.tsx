@@ -73,6 +73,7 @@ export default function App() {
     amount: number;
     merchant: string;
     category: CategoryType;
+    notes?: string;
   } | null>(null);
 
   // Modal budgets state
@@ -137,8 +138,11 @@ export default function App() {
           const sorted = data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
           setTransactions(sorted as Transaction[]);
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error("Failed to load from Supabase", e);
+        if (e.message) {
+          console.error("Supabase error message:", e.message);
+        }
       }
     };
     
@@ -251,7 +255,7 @@ export default function App() {
       const mimeType = matched[1];
       const base64Content = matched[2];
 
-      const response = await fetch("/api/gemini/parse", {
+      const response = await fetch("/api/paxsenix/parse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -263,7 +267,7 @@ export default function App() {
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Failed to process image with Gemini AI.");
+        throw new Error(data.error || "Failed to process image with Paxsenix API.");
       }
 
       // Populate verification form
@@ -271,12 +275,13 @@ export default function App() {
         date: data.date || new Date().toISOString().split('T')[0],
         amount: Number(data.amount) || 0,
         merchant: data.merchant || "Unknown Store",
-        category: (data.category as CategoryType) || "Others"
+        category: (data.category as CategoryType) || "Others",
+        notes: data.notes || ""
       });
 
     } catch (err: any) {
       console.error(err);
-      setProcessingError(err.message || "Something went wrong. Please confirm your internet and Gemini config.");
+      setProcessingError(err.message || "Something went wrong. Please confirm your internet and API config.");
     } finally {
       setIsProcessing(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -292,7 +297,7 @@ export default function App() {
     setVerificationForm(null);
 
     try {
-      const response = await fetch("/api/gemini/parse", {
+      const response = await fetch("/api/paxsenix/parse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -303,14 +308,15 @@ export default function App() {
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Failed to process text statement with Gemini AI.");
+        throw new Error(data.error || "Failed to process text statement with Paxsenix API.");
       }
 
       setVerificationForm({
         date: data.date || new Date().toISOString().split('T')[0],
         amount: Number(data.amount) || 0,
         merchant: data.merchant || "Unknown Store",
-        category: (data.category as CategoryType) || "Others"
+        category: (data.category as CategoryType) || "Others",
+        notes: data.notes || ""
       });
 
     } catch (err: any) {
@@ -330,7 +336,8 @@ export default function App() {
       date: verificationForm.date,
       amount: Number(verificationForm.amount),
       merchant: verificationForm.merchant,
-      category: verificationForm.category
+      category: verificationForm.category,
+      notes: verificationForm.notes
     };
 
     try {
@@ -789,6 +796,16 @@ export default function App() {
                         ))}
                       </select>
                     </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-400 mb-1">Additional Notes (Optional)</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. Keterangan"
+                        value={verificationForm.notes || ""}
+                        onChange={(e) => setVerificationForm({ ...verificationForm, notes: e.target.value })}
+                        className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:border-teal-600"
+                      />
+                    </div>
                   </div>
 
                   <div className="flex gap-2 mt-5">
@@ -980,8 +997,13 @@ export default function App() {
                       <td className="p-4 font-medium text-slate-500 font-mono">
                         {tx.date}
                       </td>
-                      <td className="p-4 font-bold text-slate-800">
-                        {tx.merchant}
+                      <td className="p-4">
+                        <div className="font-bold text-slate-800">{tx.merchant}</div>
+                        {tx.notes && (
+                          <div className="text-[11px] text-slate-400 mt-0.5 max-w-[200px] truncate" title={tx.notes}>
+                            {tx.notes}
+                          </div>
+                        )}
                       </td>
                       <td className="p-4">
                         <span 

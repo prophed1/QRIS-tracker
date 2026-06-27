@@ -4,6 +4,7 @@ export interface Transaction {
   amount: number;
   merchant: string;
   category: string;
+  notes?: string;
 }
 
 export interface AppData {

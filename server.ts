@@ -4,6 +4,7 @@ import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 
 import parseHandler from "./api/gemini/parse.js";
+import paxsenixParseHandler from "./api/paxsenix/parse.js";
 
 dotenv.config();
 
@@ -16,6 +17,10 @@ app.use(express.json({ limit: '25mb' }));
 // API route first: AI Extraction Endpoint
 app.post("/api/gemini/parse", async (req, res) => {
   return await parseHandler(req, res);
+});
+
+app.post("/api/paxsenix/parse", async (req, res) => {
+  return await paxsenixParseHandler(req, res);
 });
 
 // Serve static elements or hot development middleware
