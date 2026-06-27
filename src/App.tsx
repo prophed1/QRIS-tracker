@@ -947,7 +947,7 @@ export default function App() {
                               strokeWidth={strokeWidth}
                               strokeDasharray={`${dashArray} ${circumference}`}
                               strokeDashoffset={-dashOffset}
-                              className="transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95 transition-transform hover:stroke-[10px]"
+                              className="origin-center transition-all duration-300 cursor-pointer hover:scale-[1.03] active:scale-95 hover:stroke-[10px]"
                             />
                           );
                         });
