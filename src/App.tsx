@@ -54,8 +54,8 @@ export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [budget, setBudget] = useState<number>(10000000); // 10,000,000 IDR default
   
-  const [selectedMonth, setSelectedMonth] = useState<string>("");
-  const [selectedYear, setSelectedYear] = useState<string>("");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
   
   const [activeTab, setActiveTab] = useState<"receipt" | "text" | "manual">("receipt");
   const [dragActive, setDragActive] = useState<boolean>(false);
@@ -109,8 +109,14 @@ export default function App() {
   useEffect(() => {
     // Current date values
     const now = new Date();
-    setSelectedMonth(String(now.getMonth() + 1).padStart(2, '0'));
-    setSelectedYear(String(now.getFullYear()));
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    const formatDate = (d: Date) => {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+
+    setStartDate(formatDate(firstDay));
+    setEndDate(formatDate(now));
 
     // Load from local storage securely
     try {
@@ -151,20 +157,19 @@ export default function App() {
 
   // Save budget to local storage on change
   useEffect(() => {
-    if (selectedMonth && selectedYear) {
+    if (startDate && endDate) {
       const dataToSave: AppData = {
         budget,
         transactions: [] // Don't duplicate transactions in localStorage anymore
       };
       localStorage.setItem("bsi_tracker_data", JSON.stringify(dataToSave));
     }
-  }, [budget, selectedMonth, selectedYear]);
+  }, [budget, startDate, endDate]);
 
   // Calculations
   const filteredTransactions = transactions.filter((t) => {
     if (!t.date) return false;
-    const [year, month] = t.date.split("-");
-    return year === selectedYear && month === selectedMonth;
+    return t.date >= startDate && t.date <= endDate;
   });
 
   const totalExpenses = filteredTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
@@ -378,13 +383,12 @@ export default function App() {
     }
   };
 
-  // Clear Month's Transactions
-  const handleClearMonth = async () => {
-    if (confirm("Are you sure you want to delete all transactions recorded for this month?")) {
+  // Clear Range's Transactions
+  const handleClearRange = async () => {
+    if (confirm(`Are you sure you want to delete all transactions between ${startDate} and ${endDate}?`)) {
       const idsToDelete = transactions
         .filter((t) => {
-          const [year, month] = t.date.split("-");
-          return year === selectedYear && month === selectedMonth;
+          return t.date && t.date >= startDate && t.date <= endDate;
         })
         .map(t => t.id);
 
@@ -395,7 +399,7 @@ export default function App() {
         if (error) throw error;
         setTransactions((prev) => prev.filter((t) => !idsToDelete.includes(t.id)));
       } catch (err) {
-        console.error("Failed to clear month", err);
+        console.error("Failed to clear range", err);
       }
     }
   };
@@ -434,7 +438,10 @@ export default function App() {
 
   // Handle local print capability beautifully
   const handlePrint = () => {
+    const originalTitle = document.title;
+    document.title = `QRIS_Tracker_${startDate}_to_${endDate}`;
     window.print();
+    document.title = originalTitle;
   };
 
   // Data Importer from JSON
@@ -483,10 +490,10 @@ export default function App() {
 
   // Data exporter to backup JSON
   const handleExportJSON = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(transactions, null, 2));
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(filteredTransactions, null, 2));
     const dlAnchorElem = document.createElement('a');
     dlAnchorElem.setAttribute("href", dataStr);
-    dlAnchorElem.setAttribute("download", `BSI_Expense_Tracker_${selectedYear}_${selectedMonth}.json`);
+    dlAnchorElem.setAttribute("download", `QRIS_Tracker_${startDate}_to_${endDate}.json`);
     dlAnchorElem.click();
   };
 
@@ -509,36 +516,25 @@ export default function App() {
             </div>
           </div>
           
-          {/* Month/Year Selection tools */}
+          {/* Date Range Selection tools */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="relative flex-1 sm:flex-none">
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="bg-slate-100 border-none rounded-md px-3 py-1.5 text-sm font-medium focus:ring-2 focus:ring-teal-500 w-full sm:w-40 appearance-none pr-8"
-              >
-                {MONTHS.map((m) => (
-                  <option key={m.value} value={m.value}>{m.label}</option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-slate-400">
-                <Calendar className="w-4 h-4" />
-              </div>
+            <div className="flex items-center bg-slate-100 rounded-md px-2 focus-within:ring-2 focus-within:ring-teal-500">
+              <span className="text-xs font-semibold text-slate-500 pl-2">From</span>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="bg-transparent border-none px-2 py-1.5 text-sm font-medium w-full sm:w-36 focus:outline-none focus:ring-0 text-slate-700"
+              />
             </div>
-
-            <div className="relative flex-1 sm:flex-none">
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                className="bg-slate-100 border-none rounded-md px-3 py-1.5 text-sm font-medium focus:ring-2 focus:ring-teal-500 w-full sm:w-28 appearance-none pr-8"
-              >
-                {YEARS.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-slate-400">
-                <Calendar className="w-4 h-4" />
-              </div>
+            <div className="flex items-center bg-slate-100 rounded-md px-2 focus-within:ring-2 focus-within:ring-teal-500">
+              <span className="text-xs font-semibold text-slate-500 pl-2">To</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="bg-transparent border-none px-2 py-1.5 text-sm font-medium w-full sm:w-36 focus:outline-none focus:ring-0 text-slate-700"
+              />
             </div>
           </div>
         </div>
@@ -966,7 +962,7 @@ export default function App() {
               </button>
 
               <button 
-                onClick={handleClearMonth}
+                onClick={handleClearRange}
                 disabled={filteredTransactions.length === 0}
                 className="shrink-0 text-xs font-bold text-rose-600 disabled:opacity-40 disabled:pointer-events-none hover:bg-rose-50/60 transition-colors px-3 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer"
               >
