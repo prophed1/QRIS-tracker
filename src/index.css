@@ -67,7 +67,7 @@
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  border: 3px solid #0f172a; /* match dark body background */
+  border: 3px solid #050A15; /* match dark body background */
 }
 
 ::-webkit-scrollbar-thumb:hover {
