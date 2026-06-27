@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from 'motion/react';
+import { Toaster, toast } from 'sonner';
 import { 
   Sun,
   Moon,
@@ -380,7 +381,7 @@ export default function App() {
       setRawTextMutation("");
     } catch (err: any) {
       console.error("Failed to insert transaction:", err);
-      alert("Failed to insert transaction: " + err.message);
+      toast.error("Failed to insert transaction: " + err.message);
     } finally {
       setIsProcessing(false);
     }
@@ -490,17 +491,17 @@ export default function App() {
             if (error) throw error;
             if (data) {
               setTransactions((prev) => [...data, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-              alert(`${data.length} transactions imported successfully.`);
+              toast.success(`${data.length} transactions imported successfully.`);
             }
           } else {
-             alert("No new transactions to import.");
+             toast.info("No new transactions to import.");
           }
         } else {
-          alert("Invalid JSON format.");
+          toast.error("Invalid JSON format.");
         }
       } catch (err) {
         console.error(err);
-        alert("Failed to parse or import JSON file.");
+        toast.error("Failed to parse or import JSON file.");
       }
     };
     reader.readAsText(file);
@@ -517,9 +518,10 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#050A15] text-slate-900 dark:text-slate-50 font-sans selection:bg-teal-100 dark:selection:bg-teal-900/50 selection:text-teal-900 dark:selection:text-teal-100 flex flex-col antialiased transition-colors duration-300">
+    <div className="min-h-screen ">
+      <Toaster position="top-center" richColors theme={theme === 'dark' ? 'dark' : 'light'} />
       {/* Upper Navigation / App Branded bar */}
-      <header className="h-16 bg-white dark:bg-[#0B1324] border-b border-slate-200 dark:border-[#1D2A43]/50 flex items-center justify-between px-6 shrink-0 print:hidden sticky top-0 z-40">
+      <header className="h-16 bg-white/80 dark:bg-[#050A15]/80 backdrop-blur-md border-b border-slate-200/60 dark:border-[#1D2A43]/50 flex items-center justify-between px-6 shrink-0 print:hidden sticky top-0 z-40 transition-colors duration-300">
         <div className="flex w-full max-w-6xl mx-auto flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center text-white">
@@ -695,88 +697,131 @@ export default function App() {
             )}
 
             {/* Content Tabs area */}
-            <div className="p-6">
-              {activeTab === 'receipt' && !isOffline && (
-                <div>
-                  <div 
-                    onDragEnter={handleDrag}
-                    onDragOver={handleDrag}
-                    onDragLeave={handleDrag}
-                    onDrop={handleDrop}
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-lg flex flex-col items-center justify-center p-6 text-center group cursor-pointer hover:scale-105 active:scale-95 transition-transform transition-all min-h-[190px] relative ${dragActive ? 'border-teal-400 bg-teal-50/20' : 'border-slate-200 dark:border-[#1D2A43]/50 hover:border-teal-400 hover:bg-teal-50/20'}`}
+            <div className="p-6 overflow-hidden min-h-[250px] relative">
+              <AnimatePresence mode="wait">
+                {activeTab === 'receipt' && !isOffline && (
+                  <motion.div
+                    key="receipt"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.2 }}
                   >
-                    <input 
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleFileChange}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                    <div className="w-12 h-12 bg-slate-50 dark:bg-[#111C34]/50 rounded-full flex items-center justify-center mb-3 group-hover:bg-white dark:bg-[#0B1324] text-slate-500 dark:text-slate-300 group-hover:text-teal-600 dark:text-teal-400 transition-colors">
-                      <ImageIcon className="w-8 h-8" />
+                    <div 
+                      onDragEnter={handleDrag}
+                      onDragOver={handleDrag}
+                      onDragLeave={handleDrag}
+                      onDrop={handleDrop}
+                      className={`border-2 border-dashed rounded-lg flex flex-col items-center justify-center p-6 text-center group cursor-pointer hover:scale-105 active:scale-95 transition-transform transition-all min-h-[190px] relative ${dragActive ? 'border-teal-400 bg-teal-50/20 dark:bg-[#111C34]/50' : 'border-slate-200 dark:border-[#1D2A43]/50 hover:border-teal-400 hover:bg-teal-50/20 dark:hover:bg-[#111C34]/50'}`}
+                    >
+                      <input 
+                        type="file" 
+                        ref={fileInputRef}
+                        accept="image/jpeg,image/png,image/webp" 
+                        onChange={handleFileChange}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                      />
+                      
+                      <div className="w-12 h-12 bg-slate-50 dark:bg-[#111C34]/50 rounded-full flex items-center justify-center mb-3 group-hover:bg-white dark:bg-[#0B1324] text-slate-500 dark:text-slate-300 group-hover:text-teal-600 dark:text-teal-400 transition-colors">
+                        <Upload className="w-6 h-6" />
+                      </div>
+                      
+                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                        Drag & drop receipt image
+                      </p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider font-semibold">
+                        or click to browse files
+                      </p>
+                      
+                      <span className="text-[10px] uppercase tracking-wider font-mono bg-teal-50 dark:bg-teal-500/20 text-teal-800 dark:text-teal-400 px-2 py-0.5 rounded-md font-semibold mt-3">
+                        JPG, PNG, WEBP (Max 5MB)
+                      </span>
                     </div>
-                    <p className="font-semibold text-slate-800 dark:text-slate-100 text-sm">
-                      Upload Receipt Screenshot
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-300 mt-1 min-h-[1.5rem]">
-                      Drag and drop image here, or browse local files
-                    </p>
-                    <span className="text-[10px] uppercase tracking-wider font-mono bg-teal-50 dark:bg-teal-500/20 text-teal-800 dark:text-teal-400 px-2 py-0.5 rounded-md font-semibold mt-3">
-                      Auto-detects Bank Receipts & QRIS
-                    </span>
-                  </div>
-                </div>
-              )}
+                  </motion.div>
+                )}
 
-              {activeTab === 'text' && !isOffline && (
-                <div className="space-y-4">
-                  <div className="relative">
-                    <textarea 
-                      value={rawTextMutation}
-                      onChange={(e) => setRawTextMutation(e.target.value)}
-                      rows={5}
-                      className="w-full border border-slate-200/60 dark:border-[#1D2A43]/50 rounded-2xl p-3.5 text-sm placeholder:text-slate-500 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500/10 focus:border-teal-600 transition-shadow bg-slate-50/25 dark:bg-[#0B1324]/50"
-                      placeholder="Paste BSI Mobile transaction SMS, mutation text, QRIS notification receipts, or transaction notification lines here..."
-                    />
-                  </div>
-                  <button 
-                    onClick={handleTextMutationParse}
-                    disabled={isProcessing || !rawTextMutation.trim()}
-                    className="w-full bg-teal-800 hover:bg-teal-900 disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:cursor-not-allowed text-white font-semibold py-2.5 px-4 rounded-2xl text-sm transition-colors flex justify-center items-center gap-2.5 shadow-xs cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+                {activeTab === 'text' && !isOffline && (
+                  <motion.div
+                    key="text"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.2 }}
+                    className="space-y-4"
                   >
-                    <Cpu className="w-4 h-4" />
-                    <span>Process Statement with Gemini AI</span>
-                  </button>
-                </div>
-              )}
+                    <div className="relative">
+                      <textarea 
+                        value={rawTextMutation}
+                        onChange={(e) => setRawTextMutation(e.target.value)}
+                        placeholder="Paste your e-wallet mutation or chat message here...&#10;Example: 'Grab Ride 45,000' or 'Lunch at McD 120,000'"
+                        className="w-full border border-slate-200/60 dark:border-[#1D2A43]/50 rounded-2xl p-3.5 text-sm placeholder:text-slate-400 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500/10 focus:border-teal-600 transition-shadow bg-slate-50/25 dark:bg-[#0B1324]/50 min-h-[190px] resize-none"
+                      />
+                    </div>
+                    <button 
+                      onClick={handleTextMutationParse}
+                      disabled={isProcessing || !rawTextMutation.trim()}
+                      className="w-full bg-teal-800 hover:bg-teal-900 disabled:bg-slate-200 dark:disabled:bg-[#111C34] disabled:text-slate-400 dark:disabled:text-slate-500 disabled:cursor-not-allowed text-white font-semibold py-2.5 px-4 rounded-2xl text-sm transition-colors flex justify-center items-center gap-2.5 shadow-xs cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span>Process Statement with GPT-4o</span>
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Status / Loading blocks */}
+              <AnimatePresence>
               {isProcessing && (
-                <div className="mt-6 text-center py-6 bg-slate-50/80 dark:bg-[#111C34]/80 rounded-2xl border border-slate-200/60 dark:border-[#1D2A43]/50 flex flex-col items-center justify-center animate-pulse">
-                  <RefreshCw className="animate-spin text-teal-700 dark:text-teal-400 w-6 h-6 mb-2" />
-                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-                    Securely processing with Gemini AI...
-                  </p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-300 mt-1">
-                    Converting receipt elements to structured JSON. Please wait.
-                  </p>
-                </div>
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                  className="mt-6 bg-slate-50/80 dark:bg-[#111C34]/50 rounded-2xl border border-slate-200/60 dark:border-[#1D2A43]/50 p-6 overflow-hidden relative"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 dark:via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+                  <div className="flex flex-col items-center justify-center mb-6">
+                    <motion.div 
+                      animate={{ rotate: 360 }}
+                      transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                    >
+                      <Cpu className="text-teal-600 dark:text-teal-400 w-8 h-8 mb-3 opacity-80" />
+                    </motion.div>
+                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                      Securely processing with GPT-4o...
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      Converting receipt elements to structured JSON
+                    </p>
+                  </div>
+                  
+                  {/* Skeleton layout resembling receipt extraction */}
+                  <div className="space-y-4 max-w-sm mx-auto opacity-70">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="h-3 w-16 bg-slate-200 dark:bg-slate-700 rounded-full" />
+                        <div className="h-10 w-full bg-slate-200/60 dark:bg-slate-800 rounded-xl" />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="h-3 w-20 bg-slate-200 dark:bg-slate-700 rounded-full" />
+                        <div className="h-10 w-full bg-slate-200/60 dark:bg-slate-800 rounded-xl" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-3 w-24 bg-slate-200 dark:bg-slate-700 rounded-full" />
+                      <div className="h-10 w-full bg-slate-200/60 dark:bg-slate-800 rounded-xl" />
+                    </div>
+                  </div>
+                </motion.div>
               )}
-
-              {processingError && (
-                <div className="mt-6 border border-slate-200/60 dark:border-[#1D2A43]/50 border-rose-100 dark:border-rose-900/50 bg-rose-50/40 dark:bg-rose-950/40 rounded-2xl p-4 text-xs text-rose-700">
-                  <p className="font-bold mb-1 flex items-center gap-1">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-rose-600" />
-                    AI Processing Refused OR Interrupted
-                  </p>
-                  <p className="leading-relaxed whitespace-pre-line">{processingError}</p>
-                </div>
-              )}
+              </AnimatePresence>
 
               {/* Extraction Verification block fields */}
+              <AnimatePresence>
               {(verificationForm || activeTab === 'manual') && verificationForm && (
-                <div className={`mt-6 border border-slate-200/60 dark:border-[#1D2A43]/50 border-teal-100 dark:border-teal-800/50 bg-teal-50/30 dark:bg-teal-950/40 rounded-2xl p-5 relative overflow-hidden ${activeTab === 'manual' ? 'mt-0' : ''}`}>
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className={`mt-6 border border-slate-200/60 dark:border-[#1D2A43]/50 border-teal-100 dark:border-teal-800/50 bg-teal-50/30 dark:bg-teal-950/40 rounded-2xl p-5 relative overflow-hidden ${activeTab === 'manual' ? 'mt-0' : ''}`}
+                >
                   <h3 className="text-sm font-semibold text-teal-950 dark:text-teal-50 mb-4 flex items-center gap-2">
                     <CheckSquare className="w-4.5 h-4.5 text-teal-700 dark:text-teal-400" />
                     {activeTab === 'manual' ? "Add New Transaction" : "Verify AI-Extracted Details"}
@@ -811,32 +856,30 @@ export default function App() {
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-300 mb-1">Category type</label>
+                      <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-300 mb-1">Category</label>
                       <select 
                         value={verificationForm.category}
                         onChange={(e) => setVerificationForm({ ...verificationForm, category: e.target.value as CategoryType })}
-                        className="w-full border border-slate-200/60 dark:border-[#1D2A43]/50 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-[#0B1324] focus:outline-none focus:border-teal-600 font-semibold"
+                        className="w-full border border-slate-200/60 dark:border-[#1D2A43]/50 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-[#0B1324] focus:outline-none focus:border-teal-600"
                       >
-                        {CATEGORIES.map((cat) => (
-                          <option key={cat.name} value={cat.name}>
-                            {cat.icon} {cat.name}
-                          </option>
+                        {CATEGORIES.map(cat => (
+                          <option key={cat.name} value={cat.name}>{cat.name}</option>
                         ))}
                       </select>
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-300 mb-1">Additional Notes (Optional)</label>
+                      <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-300 mb-1">Notes (Optional)</label>
                       <input 
                         type="text" 
-                        placeholder="e.g. Keterangan"
-                        value={verificationForm.notes || ""}
+                        value={verificationForm.notes || ''}
                         onChange={(e) => setVerificationForm({ ...verificationForm, notes: e.target.value })}
                         className="w-full border border-slate-200/60 dark:border-[#1D2A43]/50 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-[#0B1324] focus:outline-none focus:border-teal-600"
+                        placeholder="Additional details..."
                       />
                     </div>
                   </div>
-
-                  <div className="flex gap-2 mt-5">
+                  
+                  <div className="mt-5 flex gap-3">
                     <button 
                       onClick={handleConfirmSave}
                       disabled={isProcessing}
@@ -851,8 +894,9 @@ export default function App() {
                       {activeTab === 'manual' ? "Clear" : "Dismiss"}
                     </button>
                   </div>
-                </div>
+                </motion.div>
               )}
+              </AnimatePresence>
             </div>
           </div>
 
@@ -1074,11 +1118,19 @@ export default function App() {
             
             {/* Empty block status feedback */}
             {filteredTransactions.length === 0 && (
-              <div className="text-center py-14 text-slate-500 dark:text-slate-300/80 p-6 flex flex-col items-center justify-center">
-                <FolderOpen className="w-9 h-9 mx-auto mb-2 text-slate-200" />
-                <p className="font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-300 text-sm">No recorded transactions.</p>
-                <p className="text-xs text-slate-500 dark:text-slate-300 mt-0.5">Filter of month status is empty. Try uploading a screenshot or using the text parser.</p>
-              </div>
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center py-20 px-6 flex flex-col items-center justify-center"
+              >
+                <div className="w-20 h-20 bg-slate-50 dark:bg-[#111C34]/50 rounded-full flex items-center justify-center mb-4 ring-8 ring-white dark:ring-[#050A15]">
+                  <FolderOpen className="w-8 h-8 text-slate-300 dark:text-slate-600" />
+                </div>
+                <h3 className="font-bold text-slate-700 dark:text-slate-200 text-lg mb-1">No transactions found</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                  You don't have any recorded transactions for this month. Try uploading a screenshot or using the text parser to add one.
+                </p>
+              </motion.div>
             )}
           </div>
         </section>
@@ -1091,7 +1143,7 @@ export default function App() {
           <div className="flex items-center gap-1.5">
             <div className={`w-2 h-2 rounded-full ${isOffline ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
             <span className="text-[10px] text-slate-500 dark:text-slate-300 font-bold uppercase tracking-wider">
-              {isOffline ? 'Offline Mode (Local Only)' : 'Gemini AI v1.5 Stable Connection'}
+              {isOffline ? 'Offline Mode (Local Only)' : 'GPT-4o (Paxsenix) Stable Connection'}
             </span>
           </div>
         </div>
