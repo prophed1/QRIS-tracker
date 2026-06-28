@@ -22,10 +22,14 @@ import {
   FolderOpen,
   WifiOff,
   Upload,
-  Edit3
+  Edit3,
+  Github,
+  Mail,
+  LogOut
 } from "lucide-react";
 import { Transaction, AppData, CategoryType } from "./types";
 import { supabase } from "./lib/supabase";
+import type { User } from "@supabase/supabase-js";
 
 const CATEGORIES: { name: CategoryType; icon: string; color: string }[] = [
   { name: "Food & Beverage", icon: "🍔", color: "#F97316" }, // Orange
@@ -81,11 +85,16 @@ export default function App() {
   const [dragActive, setDragActive] = useState<boolean>(false);
   
   const [isOffline, setIsOffline] = useState<boolean>(!navigator.onLine);
+  
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   // App state for loading and edits
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [processingError, setProcessingError] = useState<string | null>(null);
   const [rawTextMutation, setRawTextMutation] = useState<string>("");
+
+  const isSupabaseConfigured = !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_ANON_KEY;
   
   // Verification states
   const [verificationForm, setVerificationForm] = useState<{
@@ -151,6 +160,16 @@ export default function App() {
       console.error("Failed to load local config", e);
     }
 
+    // Auth setup
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
     // Load from Supabase
     const fetchTransactions = async () => {
       try {
@@ -173,6 +192,10 @@ export default function App() {
     };
     
     fetchTransactions();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Save budget to local storage on change
@@ -189,7 +212,8 @@ export default function App() {
   // Calculations
   const filteredTransactions = transactions.filter((t) => {
     if (!t.date) return false;
-    return t.date >= startDate && t.date <= endDate;
+    const justDate = t.date.split('T')[0];
+    return justDate >= startDate && justDate <= endDate;
   });
 
   const totalExpenses = filteredTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
@@ -408,7 +432,9 @@ export default function App() {
     if (confirm(`Are you sure you want to delete all transactions between ${startDate} and ${endDate}?`)) {
       const idsToDelete = transactions
         .filter((t) => {
-          return t.date && t.date >= startDate && t.date <= endDate;
+          if (!t.date) return false;
+          const justDate = t.date.split('T')[0];
+          return justDate >= startDate && justDate <= endDate;
         })
         .map(t => t.id);
 
@@ -517,6 +543,95 @@ export default function App() {
     dlAnchorElem.click();
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      toast.error('Failed to sign in with Google: ' + err.message);
+    }
+  };
+
+  const signInWithGithub = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      toast.error('Failed to sign in with GitHub: ' + err.message);
+    }
+  };
+
+  const signOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      setTransactions([]);
+    } catch (err: any) {
+      toast.error('Failed to sign out: ' + err.message);
+    }
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-[#050A15] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-slate-500 dark:text-slate-400">
+          <RefreshCw className="w-8 h-8 animate-spin" />
+          <p className="text-sm font-medium animate-pulse">Loading secure session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-[#050A15] flex items-center justify-center p-6 text-slate-900 dark:text-slate-50 transition-colors duration-300">
+        <Toaster position="top-center" richColors theme={theme === 'dark' ? 'dark' : 'light'} />
+        <div className="max-w-md w-full bg-white dark:bg-[#0B1324] rounded-3xl border border-slate-200/80 dark:border-[#1D2A43] shadow-xl p-8 flex flex-col items-center">
+          <div className="w-16 h-16 bg-teal-600 rounded-2xl flex items-center justify-center text-white mb-6 shadow-lg shadow-teal-600/20">
+            <Wallet className="w-8 h-8" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-center mb-2">
+            Welcome to Expense Tracker
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 text-center text-sm mb-8">
+            Sign in securely to manage your budget and track expenses across devices.
+          </p>
+          
+          <div className="w-full flex flex-col gap-3">
+            <button
+              onClick={signInWithGoogle}
+              className="w-full flex items-center justify-center gap-3 bg-white dark:bg-[#111C34] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-[#1D2A43] py-3 px-4 rounded-xl font-medium transition-all hover:shadow-sm"
+            >
+              <Mail className="w-5 h-5 text-rose-500" />
+              Continue with Google
+            </button>
+            <button
+              onClick={signInWithGithub}
+              className="w-full flex items-center justify-center gap-3 bg-slate-900 dark:bg-[#111C34] hover:bg-slate-800 dark:hover:bg-slate-800 text-white dark:text-slate-200 border border-transparent dark:border-[#1D2A43] py-3 px-4 rounded-xl font-medium transition-all hover:shadow-sm"
+            >
+              <Github className="w-5 h-5" />
+              Continue with GitHub
+            </button>
+          </div>
+          
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-8 text-center px-4">
+            By continuing, you agree to our terms of service and privacy policy.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#050A15] text-slate-900 dark:text-slate-50 transition-colors duration-300">
       <Toaster position="top-center" richColors theme={theme === 'dark' ? 'dark' : 'light'} />
@@ -566,9 +681,22 @@ export default function App() {
             >
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
+            <button
+              onClick={signOut}
+              className="p-2 rounded-full bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-all hover:scale-110 active:scale-95 shrink-0"
+              aria-label="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </header>
+
+      {!isSupabaseConfigured && (
+        <div className="bg-amber-100 border-b border-amber-200 text-amber-800 text-sm py-2 px-6 text-center shadow-sm">
+          <strong>Database Connection Missing:</strong> It looks like your environment variables (`VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`) are missing or have been reset in the preview. Please check your settings and restart the server, otherwise your data won't load!
+        </div>
+      )}
 
       {/* Main core canvas layout */}
       <motion.main 
