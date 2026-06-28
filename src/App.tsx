@@ -676,6 +676,16 @@ export default function App() {
                 />
               </div>
             </div>
+            <div className="hidden sm:flex items-center gap-2 pr-2 border-r border-slate-200/60 dark:border-[#1D2A43]/50">
+              <div className="text-right">
+                <p className="text-xs font-bold text-slate-800 dark:text-slate-100 leading-tight truncate max-w-[150px]">
+                  {user.email}
+                </p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium capitalize">
+                  {user.app_metadata?.provider || 'Auth'} Account
+                </p>
+              </div>
+            </div>
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               className="p-2 rounded-full bg-slate-100 dark:bg-[#111C34] text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all hover:scale-110 active:scale-95 shrink-0"
