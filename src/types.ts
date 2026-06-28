@@ -5,6 +5,7 @@ export interface Transaction {
   merchant: string;
   category: string;
   notes?: string;
+  user_id?: string;
 }
 
 export interface AppData {

@@ -386,7 +386,8 @@ export default function App() {
       amount: Number(verificationForm.amount),
       merchant: verificationForm.merchant,
       category: verificationForm.category,
-      notes: verificationForm.notes
+      notes: verificationForm.notes,
+      user_id: user?.id,
     };
 
     try {
@@ -509,7 +510,8 @@ export default function App() {
               date: t.date,
               amount: Number(t.amount) || 0,
               merchant: String(t.merchant),
-              category: String(t.category)
+              category: String(t.category),
+              user_id: user?.id,
             })); // Omit ID so Supabase uses its UUID DEFAULT
 
           if (newTransactions.length > 0) {
